@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6366f1">
+<title>Suivi GAR — Club Réussir Ensemble</title>
+<link rel="manifest" href="./manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f4f8;font-family:'DM Sans',sans-serif;min-height:100vh;padding:16px;color:#1a1f2e}
+h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#1a1f2e;margin-bottom:2px}
+.subtitle{font-size:13px;color:#64748b;margin-bottom:14px}
+
+.top-bar{background:linear-gradient(135deg,#004d2e,#046a3f);border-radius:14px;padding:16px 18px;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top-bar .flag-dot{width:10px;height:10px;border-radius:50%;background:#FCD116;flex-shrink:0}
+.top-bar-text b{font-family:'Syne',sans-serif;font-size:15px}
+.top-bar-text span{font-size:12px;opacity:.85}
+
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.kpi{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.07);flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:2px;border-top:3px solid #6366f1}
+.kpi .val{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:#1a1f2e}
+.kpi .lbl{font-size:11px;color:#64748b;text-align:center}
+
+.tabs{display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.07);width:fit-content;flex-wrap:wrap}
+.tab{border:none;background:none;padding:9px 14px;border-radius:9px;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif}
+.tab.active{background:#6366f1;color:#fff}
+
+.section{display:none}
+.section.active{display:block}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card h2{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:10px;color:#1a1f2e}
+.card p.hint{font-size:12px;color:#94a3b8;margin-bottom:10px}
+
+label{font-size:12px;font-weight:600;color:#475569;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:10px;background:#f8fafc}
+textarea{resize:vertical;min-height:70px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > div{flex:1;min-width:140px}
+
+.btn{border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-primary{background:#004d2e;color:#FCD116}
+.btn-secondary{background:#eef2ff;color:#4338ca}
+.btn-danger{background:#fef2f2;color:#dc2626}
+.btn-full{width:100%}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:#64748b;font-weight:700;padding:8px 6px;border-bottom:2px solid #f1f5f9;font-size:11px;text-transform:uppercase}
+td{padding:8px 6px;border-bottom:1px solid #f8fafc}
+tr:hover td{background:#f8fafc}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-up{background:#dcfce7;color:#166534}
+.badge-down{background:#fee2e2;color:#991b1b}
+.badge-stable{background:#f1f5f9;color:#475569}
+.badge-acquis{background:#dcfce7;color:#166534}
+.badge-encours{background:#fef9c3;color:#854d0e}
+.badge-nonacquis{background:#fee2e2;color:#991b1b}
+
+.list-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #f8fafc}
+.chip{background:#eef2ff;color:#4338ca;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid transparent}
+.chip.active{background:#6366f1;color:#fff}
+
+.empty{text-align:center;color:#94a3b8;padding:24px;font-size:13px}
+.gar-pyramid{display:flex;flex-direction:column;gap:6px}
+.gar-level{border-radius:10px;padding:10px 12px;font-size:12.5px}
+.gar-level b{font-family:'Syne',sans-serif;display:block;font-size:12px;margin-bottom:3px}
+.gar-impact{background:#fdf2f8;border-left:4px solid #db2777}
+.gar-effet{background:#eff6ff;border-left:4px solid #2563eb}
+.gar-extrant{background:#f0fdf4;border-left:4px solid #16a34a}
+
+canvas{max-width:100%}
+.alert-eleve{display:flex;justify-content:space-between;align-items:center;background:#fef2f2;border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:12.5px}
+.rapport-box{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+@media(max-width:600px){.kpi{min-width:45%}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="flag-dot"></div>
+  <div class="top-bar-text" style="flex:1">
+    <b>Club Réussir Ensemble — Mamou</b><br>
+    <span>Suivi axé sur les résultats (GAR) · Ouverture le 27 juillet 2026</span>
+  </div>
+  <button id="pwa-install-btn" onclick="installGarPWA()" style="display:none;background:#FCD116;color:#004d2e;border:none;border-radius:9px;padding:9px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">📲 Installer l'application</button>
+</div>
+
+<h1>Suivi GAR</h1>
+<div class="subtitle">Gestion Axée sur les Résultats — progression des élèves toutes les 2 semaines</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="val" id="kpi-eleves">0</div><div class="lbl">Élèves inscrits</div></div>
+  <div class="kpi"><div class="val" id="kpi-cycles">0</div><div class="lbl">Évaluations réalisées</div></div>
+  <div class="kpi"><div class="val" id="kpi-moyenne">–</div><div class="lbl">Moyenne actuelle</div></div>
+  <div class="kpi"><div class="val" id="kpi-progression">–</div><div class="lbl">En progression</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="resultats" onclick="switchGarTab('resultats')">🎯 Résultats GAR</button>
+  <button class="tab" data-tab="eleves" onclick="switchGarTab('eleves')">🎓 Élèves</button>
+  <button class="tab" data-tab="evaluations" onclick="switchGarTab('evaluations')">📝 Évaluations</button>
+  <button class="tab" data-tab="dashboard" onclick="switchGarTab('dashboard')">📊 Tableau de bord</button>
+  <button class="tab" data-tab="fiche" onclick="switchGarTab('fiche')">🪪 Fiche élève</button>
+  <button class="tab" data-tab="rapport" onclick="switchGarTab('rapport')">📋 Rapport</button>
+  <button class="tab" data-tab="syncedt" onclick="switchGarTab('syncedt')">🔄 Synchro EDT</button>
+</div>
+
+<!-- ═══ TAB 1 : RÉSULTATS GAR ═══ -->
+<div class="section active" id="sec-resultats">
+  <div class="card">
+    <h2>Cadre de résultats du club</h2>
+    <p class="hint">Défini une fois, sert de boussole pour tout le suivi. Modifiable à tout moment.</p>
+    <label>🎯 Impact final (résultat de long terme)</label>
+    <textarea id="gar-impact" placeholder="Ex: Des élèves de Réussir Ensemble parmi les meilleurs du pays aux examens nationaux"></textarea>
+    <label>📈 Effets attendus (résultats intermédiaires, sur l'année)</label>
+    <textarea id="gar-effets" placeholder="Ex: Progression moyenne de +3 points sur l'année ; taux de maîtrise des programmes ≥ 80%"></textarea>
+    <label>✅ Extrants (résultats immédiats, mesurés chaque cycle)</label>
+    <textarea id="gar-extrants" placeholder="Ex: 31 élèves évalués tous les 15 jours ; taux de présence ≥ 90% ; modules couverts"></textarea>
+    <button class="btn btn-primary btn-full" onclick="saveGarConfig()">💾 Enregistrer le cadre GAR</button>
+  </div>
+
+  <div class="card">
+    <h2>Aperçu de la chaîne de résultats</h2>
+    <div class="gar-pyramid" id="gar-preview">
+      <div class="empty">Renseigne le cadre ci-dessus pour voir l'aperçu.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 2 : ÉLÈVES ═══ -->
+<div class="section" id="sec-eleves">
+  <div class="card">
+    <h2>Ajouter un élève</h2>
+    <div class="row">
+      <div><label>Nom & prénom</label><input id="el-nom" placeholder="Ex: Diallo Mamadou"></div>
+      <div><label>Classe / niveau</label><input id="el-classe" placeholder="Ex: Terminale S"></div>
+    </div>
+    <div class="row">
+      <div><label>Téléphone parent (optionnel)</label><input id="el-tel" placeholder="Ex: 622 00 00 00"></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="addEleve()">➕ Ajouter l'élève</button>
+  </div>
+  <div class="card">
+    <h2>Liste des élèves (<span id="el-count">0</span>)</h2>
+    <div id="el-list"><div class="empty">Aucun élève ajouté pour le moment.</div></div>
+  </div>
+</div>
+
+<!-- ═══ TAB 3 : ÉVALUATIONS ═══ -->
+<div class="section" id="sec-evaluations">
+  <div class="card">
+    <h2>Nouvelle évaluation (cycle de 2 semaines)</h2>
+    <div class="row">
+      <div><label>Matière</label>
+        <select id="ev-matiere">
+          <option>Mathématiques</option><option>Physique-Chimie</option><option>Français</option>
+          <option>Sciences Naturelles (SVT)</option><option>Histoire-Géographie</option>
+          <option>Anglais</option><option>Philosophie</option><option>Autre</option>
+        </select>
+      </div>
+      <div><label>Professeur</label><input id="ev-prof" placeholder="Nom du professeur"></div>
+    </div>
+    <div class="row">
+      <div><label>Date de l'évaluation</label><input id="ev-date" type="date"></div>
+      <div><label>Note maximale</label><input id="ev-max" type="number" value="20"></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="createCycle()">📝 Créer l'évaluation et saisir les notes</button>
+  </div>
+
+  <div class="card" id="ev-saisie-card" style="display:none">
+    <h2 id="ev-saisie-title">Saisie des notes</h2>
+    <table>
+      <thead><tr><th>Élève</th><th style="width:70px">Présent</th><th style="width:90px">Note</th><th style="width:120px">Niveau</th></tr></thead>
+      <tbody id="ev-saisie-body"></tbody>
+    </table>
+    <button class="btn btn-primary btn-full" style="margin-top:12px" onclick="saveCycleNotes()">💾 Enregistrer les notes</button>
+  </div>
+
+  <div class="card">
+    <h2>Historique des évaluations</h2>
+    <div id="ev-list"><div class="empty">Aucune évaluation créée pour le moment.</div></div>
+  </div>
+</div>
+
+<!-- ═══ TAB 4 : TABLEAU DE BORD ═══ -->
+<div class="section" id="sec-dashboard">
+  <div class="card">
+    <h2>Évolution de la moyenne générale du club</h2>
+    <canvas id="chart-global" height="160"></canvas>
+  </div>
+  <div class="card">
+    <h2>Progression individuelle</h2>
+    <select id="db-eleve-select" onchange="renderEleveChart()"><option value="">— Choisir un élève —</option></select>
+    <canvas id="chart-eleve" height="160"></canvas>
+  </div>
+  <div class="card">
+    <h2>⚠️ Élèves à surveiller (en régression)</h2>
+    <div id="db-alertes"><div class="empty">Pas encore assez de données (2 évaluations minimum requises).</div></div>
+  </div>
+</div>
+
+<!-- ═══ TAB : FICHE ÉLÈVE ═══ -->
+<div class="section" id="sec-fiche">
+  <div class="card">
+    <h2>Choisir un élève</h2>
+    <p class="hint">La fiche se met à jour automatiquement dès qu'une note, une présence ou un nouvel élève est enregistré.</p>
+    <select id="fiche-eleve-select" onchange="showFicheEleve()"><option value="">— Choisir un élève —</option></select>
+  </div>
+
+  <div class="card" id="fiche-card" style="display:none">
+    <div id="fiche-content"></div>
+    <canvas id="chart-fiche" height="150" style="margin-top:12px"></canvas>
+    <div class="row" style="margin-top:14px">
+      <div><button class="btn btn-primary btn-full" onclick="downloadFichePDF()">📄 Télécharger en PDF</button></div>
+      <div><button class="btn btn-secondary btn-full" onclick="sendFicheWhatsApp()">📲 Envoyer par WhatsApp</button></div>
+      <div><button class="btn btn-secondary btn-full" onclick="sendFicheEmail()">✉️ Envoyer par e-mail</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 5 : RAPPORT ═══ -->
+<div class="section" id="sec-rapport">
+  <div class="card">
+    <h2>Rapport GAR bimensuel</h2>
+    <p class="hint">Génère un résumé prêt à partager avec les 3 professeurs.</p>
+    <button class="btn btn-primary btn-full" onclick="genererRapport()">📋 Générer le rapport</button>
+  </div>
+  <div class="card" id="rapport-output-card" style="display:none">
+    <h2>Rapport généré</h2>
+    <div class="rapport-box" id="rapport-output"></div>
+    <div class="row" style="margin-top:10px">
+      <div><button class="btn btn-secondary btn-full" onclick="copierRapport()">📋 Copier le texte</button></div>
+      <div><button class="btn btn-primary btn-full" onclick="downloadRapportPDF()">📄 Télécharger en PDF</button></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div><button class="btn btn-secondary btn-full" onclick="sendRapportWhatsApp()">📲 Envoyer par WhatsApp</button></div>
+      <div><button class="btn btn-secondary btn-full" onclick="sendRapportEmail()">✉️ Envoyer par e-mail</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 6 : SYNCHRO EDT (automatique, lecture seule) ═══ -->
+<div class="section" id="sec-syncedt">
+  <div class="card">
+    <h2>🔄 Élèves synchronisés depuis l'Emploi du temps</h2>
+    <p class="hint">Ces données arrivent automatiquement dès que la fiche "Suivi 360" (note + présence) d'un élève est calculée dans l'application Emploi du temps. Aucune saisie manuelle ici — c'est en lecture seule et se met à jour en direct.</p>
+    <div id="syncedt-list"><div class="empty">En attente de données synchronisées…</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ INSTALLATION PWA (fichiers réels : manifest.json + sw.js) ═══════════════════ -->
+<script>
+(function(){
+  // ── Service Worker réel (fichier sw.js posé à côté du HTML) ──
+  // Un service worker enregistré depuis une URL Blob change d'identité à chaque
+  // chargement de page, ce qui empêche l'icône installée de se rouvrir
+  // correctement. On utilise donc un vrai fichier, stable, hébergé sur GitHub Pages.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW GAR:', e.message));
+    });
+  }
+
+  // ── Bouton d'installation ──
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.style.display = 'inline-block';
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.style.display = 'none';
+  });
+  window.installGarPWA = async function(){
+    if (!deferredPrompt) { alert("L'installation n'est pas proposée par ce navigateur pour le moment. Sur mobile, essaie le menu ⋮ → « Ajouter à l'écran d'accueil »."); return; }
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('pwa-install-btn').style.display = 'none';
+  };
+})();
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc,
+          deleteDoc, query, orderBy, serverTimestamp, onSnapshot
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Même projet Firebase que l'application Gestion Scolaire (emploi-temps),
+// mais dans des collections dédiées "gar_re_*" pour ne pas interférer avec l'existant.
+const firebaseConfig = {
+  apiKey: "AIzaSyBYeYPOptN2wEak_Ctcr4a8t5qXpj4riLE",
+  authDomain: "emploi-temps.firebaseapp.com",
+  projectId: "emploi-temps",
+  storageBucket: "emploi-temps.firebasestorage.app",
+  messagingSenderId: "665985283894",
+  appId: "1:665985283894:web:b0c4cb14824bb8fed9a597"
+};
+const fbApp = initializeApp(firebaseConfig, 'gar-reussir-ensemble');
+const fbDB = getFirestore(fbApp);
+
+let eleves = [];
+let cycles = [];   // { id, matiere, prof, date, noteMax }
+let notes = {};    // cycleId -> [{eleveId, nom, note, niveau}]
+
+// ───────────────────────────── UTILS ─────────────────────────────
+window.switchGarTab = function(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  if(tab==='dashboard') renderDashboard();
+  if(tab==='fiche') showFicheEleve();
+};
+
+function niveauFromPct(pct){
+  if(pct>=70) return 'acquis';
+  if(pct>=50) return 'encours';
+  return 'nonacquis';
+}
+function niveauLabel(n){
+  return n==='acquis' ? 'Acquis' : n==='encours' ? 'En cours' : 'Non acquis';
+}
+function niveauBadge(n){
+  return `<span class="badge badge-${n}">${niveauLabel(n)}</span>`;
+}
+function avecNote(arr){
+  return (arr||[]).filter(x=> x.pct!==null && x.pct!==undefined);
+}
+function tauxPresence(arr){
+  if(!arr || !arr.length) return null;
+  const presents = arr.filter(x=> x.present).length;
+  return (presents/arr.length)*100;
+}
+
+// ───────────────────────────── CADRE GAR ─────────────────────────────
+window.saveGarConfig = async function(){
+  const impact = document.getElementById('gar-impact').value.trim();
+  const effets = document.getElementById('gar-effets').value.trim();
+  const extrants = document.getElementById('gar-extrants').value.trim();
+  await setDoc(doc(fbDB,'gar_re_config','main'), { impact, effets, extrants, updatedAt: serverTimestamp() });
+  renderGarPreview(impact, effets, extrants);
+  alert('Cadre GAR enregistré ✅');
+};
+
+function renderGarPreview(impact, effets, extrants){
+  const box = document.getElementById('gar-preview');
+  if(!impact && !effets && !extrants){
+    box.innerHTML = '<div class="empty">Renseigne le cadre ci-dessus pour voir l\'aperçu.</div>';
+    return;
+  }
+  box.innerHTML = `
+    <div class="gar-level gar-impact"><b>🎯 Impact</b>${impact||'—'}</div>
+    <div class="gar-level gar-effet"><b>📈 Effets</b>${effets||'—'}</div>
+    <div class="gar-level gar-extrant"><b>✅ Extrants</b>${extrants||'—'}</div>
+  `;
+}
+
+async function loadGarConfig(){
+  const snap = await getDoc(doc(fbDB,'gar_re_config','main'));
+  if(snap.exists()){
+    const d = snap.data();
+    document.getElementById('gar-impact').value = d.impact||'';
+    document.getElementById('gar-effets').value = d.effets||'';
+    document.getElementById('gar-extrants').value = d.extrants||'';
+    renderGarPreview(d.impact, d.effets, d.extrants);
+  }
+}
+
+// ───────────────────────────── ÉLÈVES ─────────────────────────────
+window.addEleve = async function(){
+  const nom = document.getElementById('el-nom').value.trim();
+  const classe = document.getElementById('el-classe').value.trim();
+  const tel = document.getElementById('el-tel').value.trim();
+  if(!nom){ alert('Le nom de l\'élève est requis.'); return; }
+  await addDoc(collection(fbDB,'gar_re_eleves'), { nom, classe, tel, createdAt: serverTimestamp() });
+  document.getElementById('el-nom').value='';
+  document.getElementById('el-classe').value='';
+  document.getElementById('el-tel').value='';
+  await loadEleves();
+};
+
+window.deleteEleve = async function(id){
+  if(!confirm('Supprimer cet élève du suivi ?')) return;
+  await deleteDoc(doc(fbDB,'gar_re_eleves', id));
+  await loadEleves();
+};
+
+async function loadEleves(){
+  const snap = await getDocs(collection(fbDB,'gar_re_eleves'));
+  eleves = [];
+  snap.forEach(d=> eleves.push({ id:d.id, ...d.data() }));
+  eleves.sort((a,b)=> (a.nom||'').localeCompare(b.nom||''));
+
+  document.getElementById('kpi-eleves').textContent = eleves.length;
+  if(typeof updateGlobalKpis==='function') updateGlobalKpis();
+
+  renderElevesList();
+  refreshEleveSelectors();
+}
+
+// Affiche la liste des élèves (onglet "Élèves"), regroupée par classe/niveau,
+// en fusionnant les élèves saisis manuellement et les élèves synchronisés
+// automatiquement depuis l'Emploi du temps (sans doublon, dédup par nom).
+function renderElevesList(){
+  const list = document.getElementById('el-list');
+  if(!list) return;
+
+  const knownNames = new Set(eleves.map(e=>normName(e.nom)));
+  const syncedAsEleves = (syncedEdt||[])
+    .filter(d=>{
+      const full = normName(((d.prenom||'')+' '+(d.nom||'')).trim());
+      const nomSeul = normName(d.nom);
+      return !knownNames.has(full) && !knownNames.has(nomSeul);
+    })
+    .map(d=>({
+      id: 'sync:'+d._id,
+      nom: ((d.prenom?d.prenom+' ':'')+(d.nom||'')).trim() || '—',
+      classe: d.classe||'',
+      synced: true
+    }));
+
+  const tous = [...eleves.map(e=>({...e, synced:false})), ...syncedAsEleves];
+
+  document.getElementById('el-count').textContent = tous.length;
+
+  if(!tous.length){ list.innerHTML = '<div class="empty">Aucun élève ajouté pour le moment.</div>'; return; }
+
+  const groupes = {};
+  tous.forEach(e=>{
+    const cle = e.classe && e.classe.trim() ? e.classe.trim() : 'Classe non renseignée';
+    if(!groupes[cle]) groupes[cle] = [];
+    groupes[cle].push(e);
+  });
+
+  const classesTri = Object.keys(groupes).sort((a,b)=> a.localeCompare(b));
+
+  list.innerHTML = classesTri.map(classe=>{
+    const elevesClasse = groupes[classe].slice().sort((a,b)=>(a.nom||'').localeCompare(b.nom||''));
+    const rows = elevesClasse.map(e=>`
+      <div class="list-row">
+        <div><b>${e.nom}</b>${e.synced?' <span style="color:#0891b2;font-size:11px;font-weight:700">(EDT)</span>':''}</div>
+        ${e.synced
+          ? '<span style="color:#94a3b8;font-size:11px">Synchronisé</span>'
+          : `<button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteEleve('${e.id}')">Retirer</button>`
+        }
+      </div>
+    `).join('');
+    return `
+      <div style="margin-bottom:14px">
+        <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#6366f1;text-transform:uppercase;margin-bottom:6px">${classe} (${elevesClasse.length})</div>
+        ${rows}
+      </div>
+    `;
+  }).join('');
+}
+
+// Fusionne les élèves saisis manuellement et les élèves synchronisés depuis
+// l'Emploi du temps (collection gar_re_sync_eleves) dans les listes déroulantes
+// du Tableau de bord et de la Fiche élève, sans doublon (dédup par nom).
+// Les élèves synchronisés apparaissent avec la mention "(EDT)" et une valeur
+// préfixée "sync:" pour être reconnus par renderEleveChart/buildFicheData.
+function refreshEleveSelectors(){
+  const sel = document.getElementById('db-eleve-select');
+  const selFiche = document.getElementById('fiche-eleve-select');
+  if(!sel || !selFiche) return;
+
+  const prevDb = sel.value;
+  const prevFiche = selFiche.value;
+
+  const knownNames = new Set(eleves.map(e=>normName(e.nom)));
+  const syncOptions = (syncedEdt||[])
+    .filter(d=>{
+      const full = normName(((d.prenom||'')+' '+(d.nom||'')).trim());
+      const nomSeul = normName(d.nom);
+      return !knownNames.has(full) && !knownNames.has(nomSeul);
+    })
+    .map(d=>{
+      const label = ((d.prenom?d.prenom+' ':'')+(d.nom||'')).trim() + (d.classe?(' · '+d.classe):'') + ' (EDT)';
+      return `<option value="sync:${d._id}">${label}</option>`;
+    }).join('');
+
+  const manualOptions = eleves.map(e=>`<option value="${e.id}">${e.nom}</option>`).join('');
+  const optionsHtml = '<option value="">— Choisir un élève —</option>' + manualOptions + syncOptions;
+
+  sel.innerHTML = optionsHtml;
+  selFiche.innerHTML = optionsHtml;
+
+  if(prevDb && [...sel.options].some(o=>o.value===prevDb)) sel.value = prevDb;
+  if(prevFiche && [...selFiche.options].some(o=>o.value===prevFiche)) selFiche.value = prevFiche;
+}
+
+// ───────────────────────────── ÉVALUATIONS / CYCLES ─────────────────────────────
+let currentCycleId = null;
+
+window.createCycle = async function(){
+  const matiere = document.getElementById('ev-matiere').value;
+  const prof = document.getElementById('ev-prof').value.trim();
+  const date = document.getElementById('ev-date').value;
+  const noteMax = parseFloat(document.getElementById('ev-max').value) || 20;
+  if(!prof || !date){ alert('Renseigne le professeur et la date.'); return; }
+  if(!eleves.length){ alert('Ajoute d\'abord des élèves dans l\'onglet "Élèves".'); return; }
+
+  const ref = await addDoc(collection(fbDB,'gar_re_cycles'), {
+    matiere, prof, date, noteMax, createdAt: serverTimestamp()
+  });
+  currentCycleId = ref.id;
+
+  document.getElementById('ev-saisie-title').textContent = `Saisie des notes — ${matiere} (${date})`;
+  document.getElementById('ev-saisie-card').style.display = 'block';
+  document.getElementById('ev-saisie-body').innerHTML = eleves.map(e=>`
+    <tr data-eleve="${e.id}" data-nom="${e.nom}">
+      <td>${e.nom}</td>
+      <td><input type="checkbox" class="ev-presence-input" checked style="width:auto;margin-bottom:0"></td>
+      <td><input type="number" class="ev-note-input" min="0" max="${noteMax}" step="0.5" style="margin-bottom:0"></td>
+      <td class="ev-niveau-cell" style="color:#94a3b8;font-size:11px">—</td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('.ev-note-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const row = inp.closest('tr');
+      const cell = row.querySelector('.ev-niveau-cell');
+      const val = parseFloat(inp.value);
+      if(isNaN(val)){ cell.innerHTML='—'; return; }
+      const pct = (val/noteMax)*100;
+      cell.innerHTML = niveauBadge(niveauFromPct(pct));
+    });
+  });
+
+  document.getElementById('ev-saisie-card').scrollIntoView({behavior:'smooth'});
+};
+
+window.saveCycleNotes = async function(){
+  if(!currentCycleId){ return; }
+  const rows = document.querySelectorAll('#ev-saisie-body tr');
+  const cycleSnap = await getDoc(doc(fbDB,'gar_re_cycles', currentCycleId));
+  const noteMax = cycleSnap.data().noteMax || 20;
+  let count = 0;
+  for(const row of rows){
+    const eleveId = row.dataset.eleve;
+    const nom = row.dataset.nom;
+    const input = row.querySelector('.ev-note-input');
+    const present = row.querySelector('.ev-presence-input').checked;
+    const val = parseFloat(input.value);
+    if(isNaN(val) && present) continue; // pas de note et pas d'absence signalée : on saute
+    const pct = isNaN(val) ? null : (val/noteMax)*100;
+    await addDoc(collection(fbDB,'gar_re_cycles', currentCycleId, 'notes'), {
+      eleveId, nom, present,
+      note: isNaN(val) ? null : val,
+      noteMax, pct,
+      niveau: pct===null ? null : niveauFromPct(pct),
+      createdAt: serverTimestamp()
+    });
+    count++;
+  }
+  alert(`${count} note(s) enregistrée(s) ✅`);
+  document.getElementById('ev-saisie-card').style.display = 'none';
+  currentCycleId = null;
+  await loadCycles();
+};
+
+window.deleteCycle = async function(id){
+  if(!confirm('Supprimer cette évaluation et toutes ses notes ?')) return;
+  const notesSnap = await getDocs(collection(fbDB,'gar_re_cycles', id, 'notes'));
+  for(const n of notesSnap.docs) await deleteDoc(n.ref);
+  await deleteDoc(doc(fbDB,'gar_re_cycles', id));
+  await loadCycles();
+};
+
+async function loadCycles(){
+  const snap = await getDocs(query(collection(fbDB,'gar_re_cycles'), orderBy('date','asc')));
+  cycles = [];
+  notes = {};
+  for(const d of snap.docs){
+    const cy = { id:d.id, ...d.data() };
+    cycles.push(cy);
+    const notesSnap = await getDocs(collection(fbDB,'gar_re_cycles', d.id, 'notes'));
+    notes[d.id] = notesSnap.docs.map(n=> n.data());
+  }
+
+  document.getElementById('kpi-cycles').textContent = cycles.length;
+
+  // Moyenne actuelle = moyenne du dernier cycle
+  if(cycles.length){
+    const dernier = cycles[cycles.length-1];
+    const dernierNotes = avecNote(notes[dernier.id] || []);
+    if(dernierNotes.length){
+      const moy = dernierNotes.reduce((s,n)=>s+n.pct,0)/dernierNotes.length;
+      document.getElementById('kpi-moyenne').textContent = moy.toFixed(0)+'%';
+    }
+  }
+
+  if(typeof updateGlobalKpis==='function') updateGlobalKpis();
+
+  const list = document.getElementById('ev-list');
+  if(!cycles.length){ list.innerHTML = '<div class="empty">Aucune évaluation créée pour le moment.</div>'; return; }
+  list.innerHTML = cycles.slice().reverse().map(cy=>{
+    const nAll = notes[cy.id]||[];
+    const n = avecNote(nAll);
+    const moy = n.length ? (n.reduce((s,x)=>s+x.pct,0)/n.length).toFixed(0) : '–';
+    return `
+    <div class="list-row">
+      <div><b>${cy.matiere}</b> — ${cy.prof}<br><span style="color:#94a3b8;font-size:11px">${cy.date} · ${n.length} élève(s) noté(s) · moyenne ${moy}%</span></div>
+      <button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteCycle('${cy.id}')">Supprimer</button>
+    </div>`;
+  }).join('');
+
+  computeProgressionKpi();
+  if(typeof updateGlobalKpis==='function') updateGlobalKpis();
+
+  // Sync auto : si une fiche élève est actuellement affichée, on la rafraîchit
+  const ficheSel = document.getElementById('fiche-eleve-select');
+  if(ficheSel && ficheSel.value) showFicheEleve();
+}
+
+function computeProgressionKpi(){
+  // Compare les 2 derniers cycles où un élève a une note dans les deux
+  if(cycles.length < 2){ document.getElementById('kpi-progression').textContent = '–'; return; }
+  const dernier = cycles[cycles.length-1];
+  const avantDernier = cycles[cycles.length-2];
+  const nD = avecNote(notes[dernier.id]||[]), nA = avecNote(notes[avantDernier.id]||[]);
+  const mapA = {}; nA.forEach(x=> mapA[x.eleveId]=x.pct);
+  let up=0, total=0;
+  nD.forEach(x=>{
+    if(mapA[x.eleveId]!==undefined){
+      total++;
+      if(x.pct > mapA[x.eleveId]) up++;
+    }
+  });
+  document.getElementById('kpi-progression').textContent = total ? `${up}/${total}` : '–';
+}
+
+// ───────────────────────────── TABLEAU DE BORD ─────────────────────────────
+let chartGlobal=null, chartEleve=null;
+
+function renderDashboard(){
+  renderGlobalChart();
+  renderEleveChart();
+  renderAlertes();
+}
+
+function renderGlobalChart(){
+  const ctx = document.getElementById('chart-global');
+  if(chartGlobal) chartGlobal.destroy();
+
+  // Priorité aux évaluations saisies manuellement dans le club.
+  if(cycles.length){
+    const labels = cycles.map(c=> `${c.date} (${c.matiere})`);
+    const data = cycles.map(c=>{
+      const n = avecNote(notes[c.id]||[]);
+      return n.length ? (n.reduce((s,x)=>s+x.pct,0)/n.length) : null;
+    });
+    chartGlobal = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets:[{ label:'Moyenne du club (%)', data, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.1)', tension:.3, fill:true }]},
+      options:{ scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+    });
+    return;
+  }
+
+  // Sinon, bascule automatique sur la moyenne des élèves synchronisés depuis
+  // l'Emploi du temps (moyenne par trimestre, T1 → T3).
+  const trimLabels = {T1:'1er trimestre', T2:'2e trimestre', T3:'3e trimestre'};
+  const labels = [], data = [];
+  ['T1','T2','T3'].forEach(t=>{
+    const vals = (syncedEdt||[])
+      .map(d=> d.parTrim && d.parTrim[t] && d.parTrim[t].avg!=null ? Number(d.parTrim[t].avg)/20*100 : null)
+      .filter(x=> x!==null);
+    if(vals.length){ labels.push(trimLabels[t]); data.push(vals.reduce((s,x)=>s+x,0)/vals.length); }
+  });
+  chartGlobal = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Moyenne synchronisée — Emploi du temps (%)', data, borderColor:'#0891b2', backgroundColor:'rgba(8,145,178,.1)', tension:.3, fill:true }]},
+    options:{ scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+  });
+}
+
+window.renderEleveChart = function(){
+  const eleveId = document.getElementById('db-eleve-select').value;
+  const ctx = document.getElementById('chart-eleve');
+  if(chartEleve) chartEleve.destroy();
+  if(!eleveId) return;
+
+  // Élève synchronisé depuis l'Emploi du temps : progression par trimestre.
+  if(eleveId.startsWith('sync:')){
+    const d = (syncedEdt||[]).find(x=> x._id===eleveId.slice(5));
+    if(!d) return;
+    const trimLabels = {T1:'1er trimestre', T2:'2e trimestre', T3:'3e trimestre'};
+    const labels = [], data = [];
+    ['T1','T2','T3'].forEach(t=>{
+      const avg = d.parTrim && d.parTrim[t] ? d.parTrim[t].avg : null;
+      if(avg!==null && avg!==undefined){ labels.push(trimLabels[t]); data.push(Number(avg)/20*100); }
+    });
+    chartEleve = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets:[{ label:'Score (%) — Emploi du temps', data, borderColor:'#0891b2', backgroundColor:'rgba(8,145,178,.1)', tension:.3, fill:true }]},
+      options:{ scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+    });
+    return;
+  }
+
+  const labels = [], data = [];
+  cycles.forEach(c=>{
+    const n = (notes[c.id]||[]).find(x=>x.eleveId===eleveId);
+    if(n && n.pct!==null && n.pct!==undefined){ labels.push(`${c.date} (${c.matiere})`); data.push(n.pct); }
+  });
+  chartEleve = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Score (%)', data, borderColor:'#16a34a', backgroundColor:'rgba(22,163,74,.1)', tension:.3, fill:true }]},
+    options:{ scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+  });
+};
+
+function renderAlertes(){
+  const box = document.getElementById('db-alertes');
+
+  // Priorité aux évaluations saisies manuellement dans le club.
+  if(cycles.length >= 2){
+    const dernier = cycles[cycles.length-1];
+    const avantDernier = cycles[cycles.length-2];
+    const nD = avecNote(notes[dernier.id]||[]), nA = avecNote(notes[avantDernier.id]||[]);
+    const mapA = {}; nA.forEach(x=> mapA[x.eleveId]=x.pct);
+    const regressions = [];
+    nD.forEach(x=>{
+      if(mapA[x.eleveId]!==undefined && x.pct < mapA[x.eleveId] - 5){
+        regressions.push({ nom:x.nom, avant:mapA[x.eleveId], apres:x.pct });
+      }
+    });
+    if(!regressions.length){ box.innerHTML = '<div class="empty">Aucune régression notable détectée. 👍</div>'; return; }
+    box.innerHTML = regressions.map(r=>`
+      <div class="alert-eleve">
+        <span><b>${r.nom}</b></span>
+        <span>${r.avant.toFixed(0)}% → ${r.apres.toFixed(0)}% <span class="badge badge-down">▼ ${(r.avant-r.apres).toFixed(0)} pts</span></span>
+      </div>
+    `).join('');
+    return;
+  }
+
+  // Sinon, bascule automatique sur la comparaison T1 → T3 des élèves
+  // synchronisés depuis l'Emploi du temps.
+  if(!(syncedEdt||[]).length){ box.innerHTML = '<div class="empty">Pas encore assez de données (2 évaluations minimum requises).</div>'; return; }
+  const regressionsSync = [];
+  syncedEdt.forEach(d=>{
+    const t1 = d.parTrim?.T1?.avg, t3 = d.parTrim?.T3?.avg;
+    if(t1!==null && t1!==undefined && t3!==null && t3!==undefined && Number(t3) < Number(t1) - 1){
+      const nom = ((d.prenom?d.prenom+' ':'')+(d.nom||'')).trim();
+      regressionsSync.push({ nom, avant:Number(t1)/20*100, apres:Number(t3)/20*100 });
+    }
+  });
+  if(!regressionsSync.length){ box.innerHTML = '<div class="empty">Aucune régression notable détectée (Emploi du temps). 👍</div>'; return; }
+  box.innerHTML = regressionsSync.map(r=>`
+    <div class="alert-eleve">
+      <span><b>${r.nom}</b> <span style="color:#94a3b8;font-size:10px">(EDT)</span></span>
+      <span>${r.avant.toFixed(0)}% → ${r.apres.toFixed(0)}% <span class="badge badge-down">▼ ${(r.avant-r.apres).toFixed(0)} pts</span></span>
+    </div>
+  `).join('');
+}
+
+// ───────────────────────────── FICHE ÉLÈVE (sync auto) ─────────────────────────────
+let chartFiche = null;
+
+function buildFicheData(eleveId){
+  if(typeof eleveId === 'string' && eleveId.startsWith('sync:')){
+    return buildFicheDataSync(eleveId.slice(5));
+  }
+
+  const eleve = eleves.find(e=>e.id===eleveId);
+  if(!eleve) return null;
+
+  const historique = [];
+  let totalPct = 0, countNote = 0, totalCycles = 0, presents = 0;
+
+  cycles.forEach(c=>{
+    const n = (notes[c.id]||[]).find(x=>x.eleveId===eleveId);
+    if(!n) return;
+    totalCycles++;
+    if(n.present) presents++;
+    if(n.pct!==null && n.pct!==undefined){
+      totalPct += n.pct; countNote++;
+      historique.push({ matiere:c.matiere, prof:c.prof, date:c.date, note:n.note, noteMax:n.noteMax, pct:n.pct, niveau:n.niveau, present:n.present });
+    } else {
+      historique.push({ matiere:c.matiere, prof:c.prof, date:c.date, note:null, noteMax:c.noteMax, pct:null, niveau:null, present:n.present });
+    }
+  });
+
+  return {
+    eleve,
+    historique,
+    moyenne: countNote ? (totalPct/countNote) : null,
+    tauxPresence: totalCycles ? (presents/totalCycles)*100 : null
+  };
+}
+
+// Construit une fiche à partir d'un élève synchronisé depuis l'Emploi du temps
+// (collection gar_re_sync_eleves) : les 3 trimestres deviennent l'historique,
+// la moyenne générale et le taux de présence viennent directement du Suivi 360.
+function buildFicheDataSync(syncId){
+  const d = (syncedEdt||[]).find(x=> x._id===syncId);
+  if(!d) return null;
+
+  const eleve = {
+    nom: ((d.prenom?d.prenom+' ':'')+(d.nom||'')).trim() || '—',
+    classe: d.classe||'',
+    tel: ''
+  };
+
+  const trimLabels = {T1:'1er trimestre (EDT)', T2:'2e trimestre (EDT)', T3:'3e trimestre (EDT)'};
+  const historique = [];
+  ['T1','T2','T3'].forEach(t=>{
+    const avg = d.parTrim && d.parTrim[t] ? d.parTrim[t].avg : null;
+    if(avg===null || avg===undefined) return;
+    const pct = Number(avg)/20*100;
+    historique.push({ matiere:trimLabels[t], prof:'', date:'', note:Number(avg), noteMax:20, pct, niveau:niveauFromPct(pct), present:true });
+  });
+
+  const moyGen = d.prediction && d.prediction.moyenneGenerale!=null ? Number(d.prediction.moyenneGenerale) : null;
+  const moyenne = moyGen!==null ? (moyGen/20*100) : (historique.length ? historique.reduce((s,h)=>s+h.pct,0)/historique.length : null);
+  const tauxPresence = d.presence && d.presence.taux!=null ? Number(d.presence.taux) : null;
+
+  return { eleve, historique, moyenne, tauxPresence };
+}
+
+window.showFicheEleve = function(){
+  const eleveId = document.getElementById('fiche-eleve-select').value;
+  const card = document.getElementById('fiche-card');
+  if(!eleveId){ card.style.display='none'; return; }
+
+  const data = buildFicheData(eleveId);
+  if(!data){ card.style.display='none'; return; }
+  card.style.display='block';
+
+  const { eleve, historique, moyenne, tauxPresence: tp } = data;
+
+  const rowsHtml = historique.length ? historique.map(h=>`
+    <tr>
+      <td>${h.date}</td><td>${h.matiere}</td>
+      <td>${h.present ? '✅' : '❌ Absent'}</td>
+      <td>${h.note!==null ? h.note+'/'+h.noteMax : '—'}</td>
+      <td>${h.niveau ? niveauBadge(h.niveau) : '—'}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:14px">Aucune évaluation enregistrée pour le moment.</td></tr>`;
+
+  document.getElementById('fiche-content').innerHTML = `
+    <h2 style="margin-bottom:4px">${eleve.nom}</h2>
+    <p class="hint" style="margin-bottom:12px">${eleve.classe||'Classe non renseignée'} ${eleve.tel?(' · '+eleve.tel):''}</p>
+    <div class="kpis" style="margin-bottom:14px">
+      <div class="kpi"><div class="val">${moyenne!==null ? moyenne.toFixed(0)+'%' : '–'}</div><div class="lbl">Moyenne générale</div></div>
+      <div class="kpi"><div class="val">${tp!==null ? tp.toFixed(0)+'%' : '–'}</div><div class="lbl">Taux de présence</div></div>
+      <div class="kpi"><div class="val">${historique.length}</div><div class="lbl">Évaluations suivies</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Matière</th><th>Présence</th><th>Note</th><th>Niveau</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
+
+  const ctx = document.getElementById('chart-fiche');
+  if(chartFiche) chartFiche.destroy();
+  const chartLabels = historique.filter(h=>h.pct!==null).map(h=> h.date ? `${h.date} (${h.matiere})` : h.matiere);
+  const chartData = historique.filter(h=>h.pct!==null).map(h=>h.pct);
+  if(chartLabels.length){
+    chartFiche = new Chart(ctx, {
+      type:'line',
+      data:{ labels:chartLabels, datasets:[{ label:'Progression (%)', data:chartData, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.1)', tension:.3, fill:true }]},
+      options:{ scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+    });
+  }
+};
+
+function ficheTexte(data){
+  const { eleve, historique, moyenne, tauxPresence: tp } = data;
+  const lignes = historique.map(h=>
+    `- ${h.date ? h.date+' · ' : ''}${h.matiere} : ${h.present ? (h.note!==null ? h.note+'/'+h.noteMax+' ('+niveauLabel(h.niveau)+')' : 'présent, non noté') : 'absent'}`
+  ).join('\n');
+  return `FICHE GAR — ${eleve.nom}
+Club Réussir Ensemble (Mamou)
+Classe : ${eleve.classe||'—'}
+
+Moyenne générale : ${moyenne!==null ? moyenne.toFixed(1)+'%' : 'pas encore de note'}
+Taux de présence : ${tp!==null ? tp.toFixed(0)+'%' : '—'}
+
+Historique des évaluations :
+${lignes || 'Aucune évaluation enregistrée pour le moment.'}`;
+}
+
+window.downloadFichePDF = function(){
+  const eleveId = document.getElementById('fiche-eleve-select').value;
+  const data = buildFicheData(eleveId);
+  if(!data) return;
+  const { jsPDF } = window.jspdf;
+  const docPdf = new jsPDF();
+  const texte = ficheTexte(data);
+  docPdf.setFontSize(14);
+  docPdf.text('Fiche GAR — Club Réussir Ensemble (Mamou)', 14, 18);
+  docPdf.setFontSize(11);
+  const lignes = docPdf.splitTextToSize(texte, 180);
+  docPdf.text(lignes, 14, 30);
+  docPdf.save(`Fiche_GAR_${data.eleve.nom.replace(/\s+/g,'_')}.pdf`);
+};
+
+window.sendFicheWhatsApp = function(){
+  const eleveId = document.getElementById('fiche-eleve-select').value;
+  const data = buildFicheData(eleveId);
+  if(!data) return;
+  const texte = ficheTexte(data);
+  let tel = (data.eleve.tel||'').replace(/[^0-9+]/g,'');
+  if(!tel){
+    tel = prompt('Aucun numéro enregistré pour cet élève.\nEntre le numéro WhatsApp (avec indicatif, ex: 224622000000) :') || '';
+    tel = tel.replace(/[^0-9+]/g,'');
+  }
+  const url = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(texte)}` : `https://wa.me/?text=${encodeURIComponent(texte)}`;
+  window.open(url, '_blank');
+};
+
+window.sendFicheEmail = function(){
+  const eleveId = document.getElementById('fiche-eleve-select').value;
+  const data = buildFicheData(eleveId);
+  if(!data) return;
+  const texte = ficheTexte(data);
+  const subject = `Fiche GAR — ${data.eleve.nom} — Club Réussir Ensemble`;
+  const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(texte)}`;
+  window.location.href = url;
+};
+
+// ───────────────────────────── RAPPORT ─────────────────────────────
+window.genererRapport = function(){
+  if(!cycles.length){
+    if((syncedEdt||[]).length){ genererRapportSync(); return; }
+    alert('Crée au moins une évaluation avant de générer un rapport (ou attends la synchronisation depuis l\'Emploi du temps).');
+    return;
+  }
+  const dernier = cycles[cycles.length-1];
+  const nDAll = notes[dernier.id]||[];
+  const nD = avecNote(nDAll);
+  const presenceTx = tauxPresence(nDAll);
+  const moyDernier = nD.length ? (nD.reduce((s,x)=>s+x.pct,0)/nD.length) : 0;
+
+  let texteProgression = '';
+  if(cycles.length >= 2){
+    const avantDernier = cycles[cycles.length-2];
+    const nA = avecNote(notes[avantDernier.id]||[]);
+    const moyAvant = nA.length ? (nA.reduce((s,x)=>s+x.pct,0)/nA.length) : 0;
+    const delta = moyDernier - moyAvant;
+    texteProgression = `Évolution vs cycle précédent : ${delta>=0?'+':''}${delta.toFixed(1)} points.\n`;
+  }
+
+  const acquis = nD.filter(x=>x.niveau==='acquis').length;
+  const encours = nD.filter(x=>x.niveau==='encours').length;
+  const nonacquis = nD.filter(x=>x.niveau==='nonacquis').length;
+
+  let regressionsTxt = 'Aucune régression notable.';
+  if(cycles.length>=2){
+    const avantDernier = cycles[cycles.length-2];
+    const nA = avecNote(notes[avantDernier.id]||[]);
+    const mapA = {}; nA.forEach(x=> mapA[x.eleveId]=x.pct);
+    const regs = [];
+    nD.forEach(x=>{ if(mapA[x.eleveId]!==undefined && x.pct < mapA[x.eleveId]-5) regs.push(x.nom); });
+    if(regs.length) regressionsTxt = regs.join(', ');
+  }
+
+  const texte =
+`RAPPORT GAR — Club Réussir Ensemble (Mamou)
+Cycle : ${dernier.matiere} — ${dernier.date} (Prof : ${dernier.prof})
+
+RÉSULTATS DU CYCLE
+- Élèves évalués : ${nD.length} / ${eleves.length}
+- Taux de présence : ${presenceTx!==null ? presenceTx.toFixed(0)+'%' : '–'}
+- Moyenne du cycle : ${moyDernier.toFixed(1)}%
+${texteProgression}
+- Acquis : ${acquis} élève(s)
+- En cours d'acquisition : ${encours} élève(s)
+- Non acquis : ${nonacquis} élève(s)
+
+ÉLÈVES À SUIVRE EN PRIORITÉ
+${regressionsTxt}
+
+PROCHAINE ÉTAPE
+Point avec les 3 professeurs pour ajuster les séances des 2 prochaines semaines
+en fonction des lacunes identifiées ci-dessus.`;
+
+  document.getElementById('rapport-output').textContent = texte;
+  document.getElementById('rapport-output-card').style.display = 'block';
+  document.getElementById('rapport-output-card').scrollIntoView({behavior:'smooth'});
+};
+
+// Génère automatiquement le rapport GAR à partir des élèves synchronisés
+// depuis l'Emploi du temps (gar_re_sync_eleves), utilisé tant qu'aucune
+// évaluation n'a été saisie manuellement dans le club.
+function genererRapportSync(){
+  const data = syncedEdt;
+  const moyennes = data
+    .map(d=> d.prediction && d.prediction.moyenneGenerale!=null ? Number(d.prediction.moyenneGenerale) : null)
+    .filter(x=> x!==null);
+  const moyGenerale = moyennes.length ? (moyennes.reduce((s,x)=>s+x,0)/moyennes.length) : null;
+
+  const presences = data
+    .map(d=> d.presence && d.presence.taux!=null ? Number(d.presence.taux) : null)
+    .filter(x=> x!==null);
+  const presenceTx = presences.length ? (presences.reduce((s,x)=>s+x,0)/presences.length) : null;
+
+  let texteProgression = '';
+  const deltas = data
+    .map(d=>{
+      const t1 = d.parTrim?.T1?.avg, t3 = d.parTrim?.T3?.avg;
+      return (t1!==null && t1!==undefined && t3!==null && t3!==undefined) ? (Number(t3)-Number(t1)) : null;
+    })
+    .filter(x=> x!==null);
+  if(deltas.length){
+    const deltaMoy = deltas.reduce((s,x)=>s+x,0)/deltas.length;
+    texteProgression = `Évolution T1 → T3 (moyenne du club) : ${deltaMoy>=0?'+':''}${deltaMoy.toFixed(1)} pt sur 20.\n`;
+  }
+
+  let acquis=0, encours=0, nonacquis=0;
+  data.forEach(d=>{
+    const dt = d.dernierTrim;
+    const avg = dt && d.parTrim?.[dt]?.avg!=null ? Number(d.parTrim[dt].avg) : null;
+    if(avg===null) return;
+    const pct = avg/20*100;
+    if(pct>=70) acquis++; else if(pct>=50) encours++; else nonacquis++;
+  });
+
+  const aRisque = data
+    .filter(d=> d.prediction && d.prediction.statut === 'risque')
+    .map(d=> ((d.prenom?d.prenom+' ':'')+(d.nom||'')).trim());
+  const regressionsTxt = aRisque.length ? aRisque.join(', ') : 'Aucun élève signalé en risque.';
+
+  const texte =
+`RAPPORT GAR — Club Réussir Ensemble (Mamou)
+Synchronisé automatiquement depuis l'Emploi du temps (Suivi 360)
+
+RÉSULTATS SYNCHRONISÉS
+- Élèves suivis : ${data.length}
+- Taux de présence moyen : ${presenceTx!==null ? presenceTx.toFixed(0)+'%' : '–'}
+- Moyenne générale (sur 20) : ${moyGenerale!==null ? moyGenerale.toFixed(1)+'/20' : '–'}
+${texteProgression}
+- Acquis (dernier trimestre) : ${acquis} élève(s)
+- En cours d'acquisition : ${encours} élève(s)
+- Non acquis : ${nonacquis} élève(s)
+
+ÉLÈVES À SUIVRE EN PRIORITÉ
+${regressionsTxt}
+
+PROCHAINE ÉTAPE
+Dès la première évaluation saisie manuellement dans l'onglet "Évaluations",
+ce rapport basculera automatiquement sur les données du club.`;
+
+  document.getElementById('rapport-output').textContent = texte;
+  document.getElementById('rapport-output-card').style.display = 'block';
+  document.getElementById('rapport-output-card').scrollIntoView({behavior:'smooth'});
+}
+
+window.copierRapport = function(){
+  const txt = document.getElementById('rapport-output').textContent;
+  navigator.clipboard.writeText(txt).then(()=> alert('Rapport copié ✅'));
+};
+
+window.downloadRapportPDF = function(){
+  const texte = document.getElementById('rapport-output').textContent;
+  if(!texte) return;
+  const { jsPDF } = window.jspdf;
+  const docPdf = new jsPDF();
+  docPdf.setFontSize(14);
+  docPdf.text('Rapport GAR — Club Réussir Ensemble (Mamou)', 14, 18);
+  docPdf.setFontSize(11);
+  const lignes = docPdf.splitTextToSize(texte, 180);
+  docPdf.text(lignes, 14, 30);
+  const dateStr = new Date().toISOString().slice(0,10);
+  docPdf.save(`Rapport_GAR_${dateStr}.pdf`);
+};
+
+window.sendRapportWhatsApp = function(){
+  const texte = document.getElementById('rapport-output').textContent;
+  if(!texte) return;
+  const url = `https://wa.me/?text=${encodeURIComponent(texte)}`;
+  window.open(url, '_blank');
+};
+
+window.sendRapportEmail = function(){
+  const texte = document.getElementById('rapport-output').textContent;
+  if(!texte) return;
+  const subject = 'Rapport GAR — Club Réussir Ensemble';
+  const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(texte)}`;
+  window.location.href = url;
+};
+
+// ───────────────────────────── SYNCHRO EDT (automatique, lecture seule) ─────────────────────────────
+let syncedEdt = []; // dernière liste reçue depuis gar_re_sync_eleves
+
+function normName(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
+// Recalcule les 3 KPI du haut en fusionnant élèves/évaluations manuelles du club
+// avec les élèves synchronisés automatiquement depuis l'Emploi du temps.
+function updateGlobalKpis(){
+  // ── Élèves inscrits : union élèves manuels + élèves synchronisés, dédupliqués par nom ──
+  const knownNames = new Set(eleves.map(e=>normName(e.nom)));
+  let total = eleves.length;
+  syncedEdt.forEach(d=>{
+    const full = normName(((d.prenom||'')+' '+(d.nom||'')).trim());
+    const nomSeul = normName(d.nom);
+    if(!knownNames.has(full) && !knownNames.has(nomSeul)){
+      total++;
+      knownNames.add(full); knownNames.add(nomSeul);
+    }
+  });
+  document.getElementById('kpi-eleves').textContent = total;
+
+  // ── Moyenne actuelle : priorité aux évaluations du club si elles existent,
+  //    sinon moyenne des élèves synchronisés depuis l'Emploi du temps (converties en %) ──
+  if(!cycles.length && syncedEdt.length){
+    const moys = syncedEdt
+      .map(d=> d.prediction && d.prediction.moyenneGenerale!=null ? Number(d.prediction.moyenneGenerale)/20*100 : null)
+      .filter(x=> x!==null);
+    if(moys.length){
+      const moy = moys.reduce((s,x)=>s+x,0)/moys.length;
+      document.getElementById('kpi-moyenne').textContent = moy.toFixed(0)+'%';
+    }
+  }
+
+  // ── Progression : priorité aux évaluations du club si elles existent,
+  //    sinon tendance T1→T3 des élèves synchronisés ──
+  if(!(cycles.length>=2) && syncedEdt.length){
+    let up=0, tot=0;
+    syncedEdt.forEach(d=>{
+      const t1 = d.parTrim?.T1?.avg, t3 = d.parTrim?.T3?.avg;
+      if(t1!==null && t1!==undefined && t3!==null && t3!==undefined){
+        tot++;
+        if(Number(t3) > Number(t1)) up++;
+      }
+    });
+    document.getElementById('kpi-progression').textContent = tot ? `${up}/${tot}` : '–';
+  }
+}
+
+function renderSyncEdtList(items){
+  const box = document.getElementById('syncedt-list');
+  if(!box) return;
+  if(!items.length){ box.innerHTML = '<div class="empty">En attente de données synchronisées…</div>'; return; }
+  box.innerHTML = items.map(d=>{
+    const dernier = d.dernierTrim ? (d.parTrim?.[d.dernierTrim]?.avg) : null;
+    const moyGen = d.prediction?.moyenneGenerale;
+    const taux = d.presence?.taux;
+    const maj = d.updatedAt ? new Date(d.updatedAt).toLocaleString('fr-FR') : '—';
+    return `
+    <div class="list-row">
+      <div>
+        <b>${(d.prenom?d.prenom+' ':'')+(d.nom||'')}</b>
+        <span style="color:#94a3b8;font-size:12px">${d.classe?('· '+d.classe):''}</span><br>
+        <span style="color:#64748b;font-size:11px">
+          Moyenne (${d.dernierTrim||'—'}) : ${dernier!==null&&dernier!==undefined?dernier+'/20':'—'}
+          ${moyGen!==null&&moyGen!==undefined?' · Moy. générale : '+Number(moyGen).toFixed(2)+'/20':''}
+          · Présence : ${taux!==null&&taux!==undefined?taux+'%':'—'}
+        </span><br>
+        <span style="color:#c7ccd6;font-size:10px">Synchronisé le ${maj}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function listenSyncEdt(){
+  try{
+    onSnapshot(collection(fbDB,'gar_re_sync_eleves'), snap=>{
+      const items = [];
+      snap.forEach(d=> items.push({ _id:d.id, ...d.data() }));
+      items.sort((a,b)=> (a.nom||'').localeCompare(b.nom||''));
+      syncedEdt = items;
+      renderSyncEdtList(items);
+      updateGlobalKpis();
+      renderElevesList();
+      refreshEleveSelectors();
+      if(document.getElementById('sec-dashboard').classList.contains('active')) renderDashboard();
+      const ficheSel = document.getElementById('fiche-eleve-select');
+      if(ficheSel && ficheSel.value) showFicheEleve();
+    });
+  }catch(e){ console.warn('listenSyncEdt error', e); }
+}
+
+// ───────────────────────────── INIT ─────────────────────────────
+(async function init(){
+  await loadGarConfig();
+  await loadEleves();
+  await loadCycles();
+  listenSyncEdt();
+})();
+</script>
+</body>
+</html>
